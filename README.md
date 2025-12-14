@@ -321,9 +321,14 @@ This project is open source and available for educational purposes.
 - Spring Boot Specialist
 - Full-Stack Java Developer
 
+
 ## 📞 Contact
 
-For questions or suggestions, feel free to reach out.
+For questions or support:
+
+- **Email:** [salujaavaneetkaur@gmail.com](mailto:salujaavaneetkaur@gmail.com)
+- **LinkedIn:** [Avaneet Kaur Saluja](https://www.linkedin.com/in/avaneet-kaur-saluja)
+- **GitHub Issues:** [Open an issue](https://github.com/salujaavaneetkaur-a11y/ecomverse/issues)
 
 ---
 
