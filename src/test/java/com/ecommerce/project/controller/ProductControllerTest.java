@@ -26,34 +26,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Controller Tests for ProductController
- *
- * ============================================================
- * 🎓 @WebMvcTest vs @SpringBootTest:
- * ============================================================
- *
- * @WebMvcTest (What we use here):
- * - Loads ONLY web layer (Controller + Security)
- * - Mocks service layer
- * - Very fast (< 1 second)
- * - Tests: Request mapping, validation, serialization
- *
- * @SpringBootTest:
- * - Loads ENTIRE application
- * - Can use real or mocked dependencies
- * - Slower (several seconds)
- * - Tests: Full integration
- *
- * ============================================================
- * 📋 INTERVIEW TIP:
- * "I use @WebMvcTest for controller tests because:
- * 1. Fast execution (no DB, no services)
- * 2. Tests HTTP layer in isolation
- * 3. Verifies request/response mapping
- * 4. Validates input validation annotations"
- * ============================================================
- */
 @WebMvcTest(ProductController.class)
 class ProductControllerTest {
 
@@ -63,10 +35,6 @@ class ProductControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    /**
-     * @MockBean creates a Mockito mock AND registers it in Spring context
-     * Different from @Mock which doesn't register in Spring
-     */
     @MockBean
     private ProductService productService;
 
@@ -160,7 +128,7 @@ class ProductControllerTest {
         @WithMockUser(roles = "ADMIN")
         @DisplayName("Should add product when admin is authenticated")
         void addProduct_AdminAuth_ReturnsCreated() throws Exception {
-            when(productService.addProduct(eq(1L), ArgumentMatchers.any(ProductDTO.class)))
+            when(productService.addProduct(eq(1L), any(ProductDTO.class)))
                 .thenReturn(productDTO);
 
             mockMvc.perform(post("/api/admin/categories/{categoryId}/product", 1L)
@@ -196,7 +164,7 @@ class ProductControllerTest {
         @WithMockUser(roles = "ADMIN")
         @DisplayName("Should return 404 when category not found")
         void addProduct_CategoryNotFound_ReturnsNotFound() throws Exception {
-            when(productService.addProduct(eq(999L), ArgumentMatchers.any(ProductDTO.class)))
+            when(productService.addProduct(eq(999L), any(ProductDTO.class)))
                 .thenThrow(new ResourceNotFoundException("Category", "categoryId", 999L));
 
             mockMvc.perform(post("/api/admin/categories/{categoryId}/product", 999L)
@@ -268,7 +236,7 @@ class ProductControllerTest {
             updatedDTO.setDiscount(15.0);
             updatedDTO.setQuantity(75);
 
-            when(productService.updateProduct(eq(1L), ArgumentMatchers.any(ProductDTO.class)))
+            when(productService.updateProduct(eq(1L), any(ProductDTO.class)))
                 .thenReturn(updatedDTO);
 
             mockMvc.perform(put("/api/admin/products/{productId}", 1L)
@@ -293,7 +261,7 @@ class ProductControllerTest {
         @WithMockUser(roles = "ADMIN")
         @DisplayName("Should return 404 when product not found")
         void updateProduct_NotFound_ReturnsNotFound() throws Exception {
-            when(productService.updateProduct(eq(999L), ArgumentMatchers.any(ProductDTO.class)))
+            when(productService.updateProduct(eq(999L), any(ProductDTO.class)))
                 .thenThrow(new ResourceNotFoundException("Product", "productId", 999L));
 
             mockMvc.perform(put("/api/admin/products/{productId}", 999L)
