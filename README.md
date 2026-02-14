@@ -73,6 +73,7 @@ EComVerse is a modern e-commerce application designed with clean architecture pr
 - **JUnit 5** - Unit testing framework
 - **Mockito** - Mocking framework for tests
 - **Spring Security Test** - Security testing utilities
+- **Testcontainers** - Integration tests auto-skip when Docker isn’t available
 
 ## 🏗 Architecture
 
