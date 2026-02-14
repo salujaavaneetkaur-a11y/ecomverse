@@ -1,6 +1,8 @@
 package com.ecommerce.project.controller;
 
+import com.ecommerce.project.exceptions.TokenRefreshException;
 import com.ecommerce.project.model.AppRole;
+import com.ecommerce.project.model.RefreshToken;
 import com.ecommerce.project.model.Role;
 import com.ecommerce.project.model.User;
 import com.ecommerce.project.repositories.RoleRepository;
@@ -8,9 +10,14 @@ import com.ecommerce.project.repositories.UserRepository;
 import com.ecommerce.project.security.jwt.JwtUtils;
 import com.ecommerce.project.security.request.LoginRequest;
 import com.ecommerce.project.security.request.SignupRequest;
+import com.ecommerce.project.security.request.TokenRefreshRequest;
 import com.ecommerce.project.security.response.MessageResponse;
+import com.ecommerce.project.security.response.TokenRefreshResponse;
 import com.ecommerce.project.security.response.UserInfoResponse;
 import com.ecommerce.project.security.services.UserDetailsImpl;
+import com.ecommerce.project.service.RefreshTokenService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -28,8 +35,18 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Authentication Controller
+ *
+ * 🎓 ENDPOINTS:
+ * - POST /signin: Login and get access + refresh tokens
+ * - POST /signup: Register new user
+ * - POST /refresh: Get new access token using refresh token
+ * - POST /signout: Logout and invalidate tokens
+ */
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "User authentication and token management")
 public class AuthController {
 
     @Autowired
@@ -37,6 +54,9 @@ public class AuthController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
 
     @Autowired
     UserRepository userRepository;
@@ -48,6 +68,7 @@ public class AuthController {
     PasswordEncoder encoder;
 
     @PostMapping("/signin")
+    @Operation(summary = "Login", description = "Authenticate user and get access + refresh tokens")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         Authentication authentication;
         try {
@@ -57,7 +78,7 @@ public class AuthController {
             Map<String, Object> map = new HashMap<>();
             map.put("message", "Bad credentials");
             map.put("status", false);
-            return new ResponseEntity<Object>(map, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<Object>(map, HttpStatus.UNAUTHORIZED);
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -66,12 +87,17 @@ public class AuthController {
 
         ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
 
+        // Generate refresh token
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
+
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
                 .collect(Collectors.toList());
 
+        // Include refresh token in response
         UserInfoResponse response = new UserInfoResponse(userDetails.getId(),
                 userDetails.getUsername(), roles, jwtCookie.toString());
+        response.setRefreshToken(refreshToken.getToken());
 
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,
                 jwtCookie.toString())
@@ -153,10 +179,46 @@ public class AuthController {
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<?> signoutUser(){
+    @Operation(summary = "Logout", description = "Logout and invalidate tokens")
+    public ResponseEntity<?> signoutUser(Authentication authentication){
+        if (authentication != null) {
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            refreshTokenService.deleteByUserId(userDetails.getId());
+        }
         ResponseCookie cookie = jwtUtils.getCleanJwtCookie();
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,
                         cookie.toString())
                 .body(new MessageResponse("You've been signed out!"));
+    }
+
+    /**
+     * Refresh access token using refresh token
+     *
+     * 🎓 FLOW:
+     * 1. Client sends expired access token scenario
+     * 2. Client calls this endpoint with refresh token
+     * 3. Server validates refresh token
+     * 4. Server issues new access token + rotates refresh token
+     * 5. Client uses new tokens
+     */
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh token", description = "Get new access token using refresh token")
+    public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
+        String requestRefreshToken = request.getRefreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(refreshToken -> {
+                    // Rotate refresh token (security best practice)
+                    RefreshToken newRefreshToken = refreshTokenService.rotateRefreshToken(refreshToken);
+
+                    // Generate new access token
+                    User user = newRefreshToken.getUser();
+                    String accessToken = jwtUtils.generateTokenFromUsername(user.getUserName());
+
+                    return ResponseEntity.ok(new TokenRefreshResponse(accessToken, newRefreshToken.getToken()));
+                })
+                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken,
+                        "Refresh token is not in database!"));
     }
 }

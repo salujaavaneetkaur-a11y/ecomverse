@@ -1,0 +1,135 @@
+# ============================================================
+# DOCKER COMPOSE - FULL STACK DEVELOPMENT ENVIRONMENT
+# ============================================================
+#
+# 🎓 WHAT IS DOCKER COMPOSE?
+# A tool for defining and running multi-container Docker applications.
+# With one command, you spin up your entire stack:
+# - Application
+# - Database (MySQL)
+# - Cache (Redis)
+#
+# COMMANDS:
+# - docker-compose up -d      : Start all services in background
+# - docker-compose down       : Stop all services
+# - docker-compose logs -f    : Follow logs
+# - docker-compose ps         : List running services
+#
+# 📋 INTERVIEW TIP:
+# "I use Docker Compose to create a consistent development
+# environment. New developers can run 'docker-compose up'
+# and have the entire stack running in minutes."
+# ============================================================
+
+version: '3.8'
+
+services:
+  # ==================== APPLICATION ====================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecomverse-app
+    ports:
+      - "8080:8080"
+    environment:
+      # Spring profile (uses application-docker.properties)
+      - SPRING_PROFILES_ACTIVE=docker
+      # Database connection (uses service name as hostname)
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ecommerce?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=ecomuser
+      - SPRING_DATASOURCE_PASSWORD=ecompass123
+      # Redis connection
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      # JWT Configuration (use environment variables for secrets!)
+      - JWT_SECRET=${JWT_SECRET:-defaultDevSecretKey123912738aopsgjnspkmndfsopkvajoirjg94gf2opfng2moknm}
+      - JWT_EXPIRATION_MS=3600000
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      # Persist uploaded images
+      - ./images:/app/images
+    networks:
+      - ecomverse-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ==================== MYSQL DATABASE ====================
+  mysql:
+    image: mysql:8.0
+    container_name: ecomverse-mysql
+    ports:
+      - "3307:3306"  # Use 3307 to avoid conflict with local MySQL
+    environment:
+      - MYSQL_DATABASE=ecommerce
+      - MYSQL_USER=ecomuser
+      - MYSQL_PASSWORD=ecompass123
+      - MYSQL_ROOT_PASSWORD=rootpass123
+    volumes:
+      # Persist database data
+      - mysql-data:/var/lib/mysql
+      # Initialize database (optional - add init scripts)
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - ecomverse-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpass123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: --default-authentication-plugin=mysql_native_password
+
+  # ==================== REDIS CACHE ====================
+  redis:
+    image: redis:7-alpine
+    container_name: ecomverse-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - ecomverse-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==================== ADMINER (DB GUI) ====================
+  # Optional: Web-based database administration
+  adminer:
+    image: adminer:latest
+    container_name: ecomverse-adminer
+    ports:
+      - "8081:8080"
+    networks:
+      - ecomverse-network
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+# ==================== VOLUMES ====================
+# Named volumes persist data even when containers are removed
+volumes:
+  mysql-data:
+    driver: local
+  redis-data:
+    driver: local
+
+# ==================== NETWORKS ====================
+# Custom bridge network for container communication
+networks:
+  ecomverse-network:
+    driver: bridge

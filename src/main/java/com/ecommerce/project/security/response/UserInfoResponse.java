@@ -5,6 +5,7 @@ import java.util.List;
 public class UserInfoResponse {
     private Long id;
     private String jwtToken;
+    private String refreshToken;
     private String username;
     private List<String> roles;
 
@@ -51,6 +52,14 @@ public class UserInfoResponse {
 
     public void setRoles(List<String> roles) {
         this.roles = roles;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
 }
 

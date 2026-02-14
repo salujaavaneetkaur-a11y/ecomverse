@@ -1,9 +1,12 @@
 package com.ecommerce.project.controller;
 
+import com.ecommerce.project.annotation.Auditable;
 import com.ecommerce.project.config.AppConstants;
 import com.ecommerce.project.payload.ProductDTO;
 import com.ecommerce.project.payload.ProductResponse;
 import com.ecommerce.project.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,12 +18,15 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("/api")
+@Tag(name = "Products", description = "Product management API")
 public class ProductController {
 
     @Autowired
     ProductService productService;
 
     @PostMapping("/admin/categories/{categoryId}/product")
+    @Auditable(action = "CREATE_PRODUCT", entityType = "Product", logRequestBody = true)
+    @Operation(summary = "Add product", description = "Add a new product to a category")
     public ResponseEntity<ProductDTO> addProduct(@Valid @RequestBody ProductDTO productDTO,
                                                  @PathVariable Long categoryId){
         ProductDTO savedProductDTO = productService.addProduct(categoryId, productDTO);
@@ -59,6 +65,8 @@ public class ProductController {
     }
 
     @PutMapping("/admin/products/{productId}")
+    @Auditable(action = "UPDATE_PRODUCT", entityType = "Product", logRequestBody = true)
+    @Operation(summary = "Update product", description = "Update an existing product")
     public ResponseEntity<ProductDTO> updateProduct(@Valid @RequestBody ProductDTO productDTO,
                                                     @PathVariable Long productId){
         ProductDTO updatedProductDTO = productService.updateProduct(productId, productDTO);
@@ -66,6 +74,8 @@ public class ProductController {
     }
 
     @DeleteMapping("/admin/products/{productId}")
+    @Auditable(action = "DELETE_PRODUCT", entityType = "Product")
+    @Operation(summary = "Delete product", description = "Delete a product")
     public ResponseEntity<ProductDTO> deleteProduct(@PathVariable Long productId){
         ProductDTO deletedProduct = productService.deleteProduct(productId);
         return new ResponseEntity<>(deletedProduct, HttpStatus.OK);
