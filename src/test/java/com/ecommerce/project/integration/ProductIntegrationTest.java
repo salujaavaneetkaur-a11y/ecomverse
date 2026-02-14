@@ -128,10 +128,7 @@ class ProductIntegrationTest extends BaseIntegrationTest {
             new SimpleGrantedAuthority("ROLE_SELLER"),
             new SimpleGrantedAuthority("ROLE_USER")
         );
-        var authentication = new UsernamePasswordAuthenticationToken(
-            "integrationAdmin", null, authorities
-        );
-        adminToken = jwtUtils.generateTokenFromUsername(authentication);
+        adminToken = jwtUtils.generateTokenFromUsername("integrationAdmin");
 
         // Create test category
         testCategory = new Category();
