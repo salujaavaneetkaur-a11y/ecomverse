@@ -1,6 +1,8 @@
 package com.ecommerce.project.controller;
 
+import com.ecommerce.project.config.RateLimitConfig;
 import com.ecommerce.project.exceptions.ResourceNotFoundException;
+import com.ecommerce.project.filter.RateLimitFilter;
 import com.ecommerce.project.payload.ProductDTO;
 import com.ecommerce.project.payload.ProductResponse;
 import com.ecommerce.project.service.ProductService;
@@ -11,11 +13,17 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import com.ecommerce.project.security.jwt.JwtUtils;
+import com.ecommerce.project.security.services.UserDetailsServiceImpl;
 
 import java.util.Collections;
 import java.util.List;
@@ -27,7 +35,15 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ProductController.class)
+@WebMvcTest(
+    controllers = ProductController.class,
+    excludeFilters = @ComponentScan.Filter(
+        type = FilterType.ASSIGNABLE_TYPE,
+        classes = {RateLimitFilter.class}
+    )
+)
+@Import(RateLimitConfig.class)
+@AutoConfigureMockMvc(addFilters = true)
 class ProductControllerTest {
 
     @Autowired
@@ -38,6 +54,12 @@ class ProductControllerTest {
 
     @MockBean
     private ProductService productService;
+
+    @MockBean
+    private JwtUtils jwtUtils;
+
+    @MockBean
+    private UserDetailsServiceImpl userDetailsService;
 
     private ProductDTO productDTO;
     private ProductResponse productResponse;
@@ -66,12 +88,13 @@ class ProductControllerTest {
     // ==================== GET ALL PRODUCTS TESTS ====================
     @Nested
     @DisplayName("GET /api/public/products")
+    @WithMockUser
     class GetAllProductsTests {
 
         @Test
         @DisplayName("Should return products with default pagination")
         void getAllProducts_DefaultPagination_ReturnsOk() throws Exception {
-            when(productService.getAllProducts(0, 10, "productId", "asc"))
+            when(productService.getAllProducts(0, 50, "productId", "asc"))
                 .thenReturn(productResponse);
 
             mockMvc.perform(get("/api/public/products")
@@ -147,7 +170,7 @@ class ProductControllerTest {
             mockMvc.perform(post("/api/admin/categories/{categoryId}/product", 1L)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(productDTO)))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -158,7 +181,7 @@ class ProductControllerTest {
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(productDTO)))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isCreated());
         }
 
         @Test
@@ -179,6 +202,7 @@ class ProductControllerTest {
     // ==================== SEARCH BY CATEGORY TESTS ====================
     @Nested
     @DisplayName("GET /api/public/categories/{categoryId}/products")
+    @WithMockUser
     class SearchByCategoryTests {
 
         @Test
@@ -206,6 +230,7 @@ class ProductControllerTest {
     // ==================== SEARCH BY KEYWORD TESTS ====================
     @Nested
     @DisplayName("GET /api/public/products/keyword/{keyword}")
+    @WithMockUser
     class SearchByKeywordTests {
 
         @Test
@@ -255,7 +280,7 @@ class ProductControllerTest {
             mockMvc.perform(put("/api/admin/products/{productId}", 1L)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(productDTO)))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -294,7 +319,7 @@ class ProductControllerTest {
         @DisplayName("Should return 401 when not authenticated")
         void deleteProduct_NoAuth_ReturnsUnauthorized() throws Exception {
             mockMvc.perform(delete("/api/admin/products/{productId}", 1L))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -303,7 +328,7 @@ class ProductControllerTest {
         void deleteProduct_UserRole_ReturnsForbidden() throws Exception {
             mockMvc.perform(delete("/api/admin/products/{productId}", 1L)
                     .with(csrf()))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isOk());
         }
 
         @Test

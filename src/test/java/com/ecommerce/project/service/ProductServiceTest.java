@@ -312,8 +312,10 @@ class ProductServiceTest {
             when(modelMapper.map(any(ProductDTO.class), eq(Product.class))).thenReturn(product);
             when(productRepository.save(any(Product.class))).thenReturn(product);
             when(cartRepository.findCartsByProductId(1L)).thenReturn(List.of(cart));
+            com.ecommerce.project.payload.CartDTO cartDTO = new com.ecommerce.project.payload.CartDTO();
+            cartDTO.setCartId(1L);
             when(modelMapper.map(any(Cart.class), eq(com.ecommerce.project.payload.CartDTO.class)))
-                .thenReturn(new com.ecommerce.project.payload.CartDTO());
+                .thenReturn(cartDTO);
             when(modelMapper.map(any(Product.class), eq(ProductDTO.class))).thenReturn(productDTO);
 
             productService.updateProduct(1L, productDTO);

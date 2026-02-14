@@ -127,7 +127,7 @@ class OrderServiceTest {
             when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
             when(paymentRepository.save(any(Payment.class))).thenReturn(payment);
             when(orderRepository.save(any(Order.class))).thenReturn(order);
-            when(orderItemRepository.saveAll(anyList())).thenReturn(new ArrayList<>());
+            when(orderItemRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
             when(productRepository.save(any(Product.class))).thenReturn(product);
             when(cartService.deleteProductFromCart(anyLong(), anyLong())).thenReturn("Deleted");
             when(modelMapper.map(any(Order.class), eq(OrderDTO.class))).thenReturn(orderDTO);
