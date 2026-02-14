@@ -16,7 +16,7 @@
 
 # ==================== STAGE 1: BUILD ====================
 # This stage compiles the application
-FROM eclipse-temurin:17-jdk-alpine AS builder
+FROM eclipse-temurin:17-jdk AS builder
 
 # Set working directory
 WORKDIR /app
@@ -37,7 +37,7 @@ RUN ./mvnw dependency:go-offline -B
 COPY src src
 
 # Build the application (skip tests - they ran in CI/CD)
-RUN ./mvnw package -DskipTests
+RUN ./mvnw package -DskipTests -Dmaven.test.skip=true
 
 # Extract layers for better caching (Spring Boot 2.3+ feature)
 # This creates separate layers for dependencies and application code
@@ -46,7 +46,7 @@ RUN java -Djarmode=layertools -jar target/*.jar extract --destination target/ext
 
 # ==================== STAGE 2: RUN ====================
 # This stage runs the application with minimal image
-FROM eclipse-temurin:17-jre-alpine AS runtime
+FROM eclipse-temurin:17-jre AS runtime
 
 # Add labels for container registry
 LABEL maintainer="your-email@example.com"
@@ -55,7 +55,7 @@ LABEL description="EComVerse E-Commerce Platform"
 
 # Create non-root user for security
 # Never run containers as root in production!
-RUN addgroup -S spring && adduser -S spring -G spring
+RUN useradd -m -s /bin/bash spring
 
 # Set working directory
 WORKDIR /app
@@ -79,7 +79,7 @@ EXPOSE 8080
 # Health check (important for orchestration)
 # Checks if the app is healthy every 30 seconds
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-    CMD wget -q --spider http://localhost:8080/actuator/health || exit 1
+    CMD curl -f http://localhost:8080/actuator/health || exit 1
 
 # Set JVM options for containers
 # These are optimized for containerized environments
