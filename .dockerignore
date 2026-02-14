@@ -1,0 +1,52 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+*.iml
+*.iws
+*.ipr
+
+# Maven
+target/
+.m2/
+*.jar
+
+# Node (if any)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+*.class
+*.log
+
+# Documentation
+docs/
+README.md
+RESUME_ENTRY.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Dependencies and caches
+*.pyc
+__pycache__/
+.gradle/
+.cache/
