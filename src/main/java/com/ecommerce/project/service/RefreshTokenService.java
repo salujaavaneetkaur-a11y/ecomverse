@@ -32,12 +32,16 @@ public class RefreshTokenService {
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
         refreshTokenRepository.findByUser(user)
-                .ifPresent(existingToken -> refreshTokenRepository.delete(existingToken));
+                .ifPresent(existingToken -> {
+                    user.setRefreshToken(null);
+                    refreshTokenRepository.delete(existingToken);
+                });
 
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
         refreshToken.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
         refreshToken.setToken(UUID.randomUUID().toString());
+        user.setRefreshToken(refreshToken);
 
         return refreshTokenRepository.save(refreshToken);
     }
@@ -57,6 +61,7 @@ public class RefreshTokenService {
 
     public RefreshToken rotateRefreshToken(RefreshToken oldToken) {
         User user = oldToken.getUser();
+        user.setRefreshToken(null);
         refreshTokenRepository.delete(oldToken);
         return createRefreshToken(user.getUserId());
     }

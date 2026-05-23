@@ -2,6 +2,7 @@ package com.ecommerce.project.integration;
 
 import com.ecommerce.project.model.AppRole;
 import com.ecommerce.project.model.Role;
+import com.ecommerce.project.repositories.RefreshTokenRepository;
 import com.ecommerce.project.repositories.RoleRepository;
 import com.ecommerce.project.repositories.UserRepository;
 import com.ecommerce.project.security.request.LoginRequest;
@@ -67,9 +68,13 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
     @BeforeEach
     void setUp() {
         // Clean up users (but keep roles)
+        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
 
         // Create roles if not exist
