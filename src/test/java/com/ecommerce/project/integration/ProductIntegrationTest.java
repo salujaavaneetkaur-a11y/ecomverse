@@ -6,6 +6,7 @@ import com.ecommerce.project.model.AppRole;
 import com.ecommerce.project.model.User;
 import com.ecommerce.project.payload.ProductDTO;
 import com.ecommerce.project.repositories.CategoryRepository;
+import com.ecommerce.project.repositories.ProductRepository;
 import com.ecommerce.project.repositories.RoleRepository;
 import com.ecommerce.project.repositories.UserRepository;
 import com.ecommerce.project.security.jwt.JwtUtils;
@@ -72,6 +73,9 @@ class ProductIntegrationTest extends BaseIntegrationTest {
     private CategoryRepository categoryRepository;
 
     @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -93,6 +97,7 @@ class ProductIntegrationTest extends BaseIntegrationTest {
     @BeforeEach
     void setUp() {
         // Clean up first
+        productRepository.deleteAll();
         categoryRepository.deleteAll();
 
         // Create roles if not exist
