@@ -5,10 +5,14 @@ import com.ecommerce.project.model.Role;
 import com.ecommerce.project.model.AppRole;
 import com.ecommerce.project.model.User;
 import com.ecommerce.project.payload.ProductDTO;
+import com.ecommerce.project.repositories.CartItemRepository;
 import com.ecommerce.project.repositories.CategoryRepository;
+import com.ecommerce.project.repositories.OrderItemRepository;
 import com.ecommerce.project.repositories.ProductRepository;
+import com.ecommerce.project.repositories.ReviewRepository;
 import com.ecommerce.project.repositories.RoleRepository;
 import com.ecommerce.project.repositories.UserRepository;
+import com.ecommerce.project.repositories.WishlistItemRepository;
 import com.ecommerce.project.security.jwt.JwtUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
@@ -76,6 +80,18 @@ class ProductIntegrationTest extends BaseIntegrationTest {
     private ProductRepository productRepository;
 
     @Autowired
+    private CartItemRepository cartItemRepository;
+
+    @Autowired
+    private OrderItemRepository orderItemRepository;
+
+    @Autowired
+    private ReviewRepository reviewRepository;
+
+    @Autowired
+    private WishlistItemRepository wishlistItemRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -97,6 +113,10 @@ class ProductIntegrationTest extends BaseIntegrationTest {
     @BeforeEach
     void setUp() {
         // Clean up first
+        cartItemRepository.deleteAll();
+        orderItemRepository.deleteAll();
+        reviewRepository.deleteAll();
+        wishlistItemRepository.deleteAll();
         productRepository.deleteAll();
         categoryRepository.deleteAll();
 

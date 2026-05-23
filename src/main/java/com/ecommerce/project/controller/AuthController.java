@@ -96,7 +96,7 @@ public class AuthController {
 
         // Include refresh token in response
         UserInfoResponse response = new UserInfoResponse(userDetails.getId(),
-                userDetails.getUsername(), roles, jwtCookie.toString());
+                userDetails.getUsername(), roles, jwtUtils.generateTokenFromUsername(userDetails.getUsername()));
         response.setRefreshToken(refreshToken.getToken());
 
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,
